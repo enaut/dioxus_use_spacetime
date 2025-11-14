@@ -1,0 +1,21 @@
+[package]
+name = "dioxus_use_spacetime"
+version = "0.1.0"
+edition = "2021"
+authors = ["Enaut"]
+description = "A Dioxus client library for reactive SpacetimeDB connections"
+repository = "https://github.com/enaut/dioxus_use_spacetime"
+license = "MIT OR Apache-2.0"
+keywords = ["dioxus", "spacetimedb", "reactive", "hooks"]
+categories = ["web-programming", "database"]
+
+[dependencies]
+dioxus = "0.6"
+spacetimedb-sdk = "1.0"
+tokio = { version = "1.0", features = ["sync", "rt"] }
+tracing = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["full"] }

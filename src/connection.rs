@@ -3,7 +3,7 @@
 use crate::error::{Result, SpacetimeError};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 /// Represents a connection to a SpacetimeDB instance
 #[derive(Clone)]
@@ -58,32 +58,48 @@ impl SpacetimeConnection {
 
     /// Connect to the SpacetimeDB instance
     ///
-    /// This is a placeholder implementation. In a real scenario, this would
-    /// establish the WebSocket connection to SpacetimeDB.
+    /// Attempts to establish a real WebSocket connection to SpacetimeDB
     pub async fn connect(&self) -> Result<()> {
         debug!("Connecting to SpacetimeDB at {}", self.url);
         
-        // In a real implementation, this would:
-        // 1. Establish WebSocket connection
-        // 2. Authenticate if needed
-        // 3. Subscribe to initial tables
-        // 4. Receive and store the identity from SpacetimeDB
+        // Try to establish a WebSocket connection to test if SpacetimeDB is running
+        use tokio_tungstenite::connect_async;
         
-        // For now, we'll mark as connected and generate a placeholder identity
-        let mut connected = self.connected.write().await;
-        *connected = true;
-        
-        // Generate a placeholder identity (in real implementation, this comes from SpacetimeDB)
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let timestamp = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis();
-        let mut identity = self.identity.write().await;
-        *identity = Some(format!("identity-{:x}", timestamp));
-        
-        info!("Successfully connected to SpacetimeDB");
-        Ok(())
+        match connect_async(&self.url).await {
+            Ok((mut ws_stream, _)) => {
+                info!("WebSocket connection established to SpacetimeDB");
+                
+                // For now, we'll just verify the connection works
+                // In a real implementation with generated bindings, you would:
+                // 1. Send proper authentication/connection init message
+                // 2. Wait for IdentityToken response
+                // 3. Store the identity
+                
+                // Generate a connection-test identity for now
+                // In production, this would come from the IdentityToken message
+                use spacetimedb_lib::Identity as StdbIdentity;
+                let test_identity = StdbIdentity::from_claims("local", "guest");
+                let identity_str = test_identity.to_hex().to_string();
+                
+                // Close the test connection
+                let _ = ws_stream.close(None).await;
+                
+                let mut identity = self.identity.write().await;
+                *identity = Some(identity_str);
+                
+                let mut connected = self.connected.write().await;
+                *connected = true;
+                
+                info!("Successfully connected to SpacetimeDB");
+                Ok(())
+            }
+            Err(e) => {
+                error!("Failed to connect to SpacetimeDB: {}", e);
+                Err(SpacetimeError::ConnectionError(
+                    format!("Cannot connect to SpacetimeDB at {}. Is SpacetimeDB running? Error: {}", self.url, e)
+                ))
+            }
+        }
     }
 
     /// Disconnect from the SpacetimeDB instance

@@ -12,7 +12,11 @@ categories = ["web-programming", "database"]
 [dependencies]
 dioxus = "0.7.1"
 spacetimedb-sdk = "1.0"
+spacetimedb-lib = "1.0"
+spacetimedb-client-api-messages = "1.0"
 tokio = { version = "1.0", features = ["sync", "rt"] }
+tokio-tungstenite = "0.27"
+futures = "0.3"
 tracing = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"

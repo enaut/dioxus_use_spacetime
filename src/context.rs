@@ -122,6 +122,16 @@ impl SpacetimeContext {
     pub async fn subscription_count(&self) -> usize {
         self.subscriptions.read().await.len()
     }
+
+    /// Check if connected to SpacetimeDB
+    pub async fn is_connected(&self) -> bool {
+        self.connection.is_connected().await
+    }
+
+    /// Get the identity of the current connection
+    pub async fn identity(&self) -> Option<String> {
+        self.connection.identity().await
+    }
 }
 
 impl std::fmt::Debug for SpacetimeContext {

@@ -11,6 +11,7 @@ pub struct SpacetimeConnection {
     url: String,
     database: String,
     connected: Arc<RwLock<bool>>,
+    identity: Arc<RwLock<Option<String>>>,
 }
 
 impl SpacetimeConnection {
@@ -30,6 +31,7 @@ impl SpacetimeConnection {
             url,
             database,
             connected: Arc::new(RwLock::new(false)),
+            identity: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -48,6 +50,12 @@ impl SpacetimeConnection {
         *self.connected.read().await
     }
 
+    /// Get the identity of the current connection
+    /// Returns None if not connected or identity not available
+    pub async fn identity(&self) -> Option<String> {
+        self.identity.read().await.clone()
+    }
+
     /// Connect to the SpacetimeDB instance
     ///
     /// This is a placeholder implementation. In a real scenario, this would
@@ -59,10 +67,20 @@ impl SpacetimeConnection {
         // 1. Establish WebSocket connection
         // 2. Authenticate if needed
         // 3. Subscribe to initial tables
+        // 4. Receive and store the identity from SpacetimeDB
         
-        // For now, we'll mark as connected
+        // For now, we'll mark as connected and generate a placeholder identity
         let mut connected = self.connected.write().await;
         *connected = true;
+        
+        // Generate a placeholder identity (in real implementation, this comes from SpacetimeDB)
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis();
+        let mut identity = self.identity.write().await;
+        *identity = Some(format!("identity-{:x}", timestamp));
         
         info!("Successfully connected to SpacetimeDB");
         Ok(())
@@ -74,6 +92,9 @@ impl SpacetimeConnection {
         
         let mut connected = self.connected.write().await;
         *connected = false;
+        
+        let mut identity = self.identity.write().await;
+        *identity = None;
         
         info!("Disconnected from SpacetimeDB");
         Ok(())

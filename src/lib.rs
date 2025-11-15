@@ -51,7 +51,7 @@ mod table;
 pub use connection::SpacetimeConnection;
 pub use context::{use_spacetime_context, SpacetimeContext};
 pub use error::{SpacetimeError, Result};
-pub use hooks::{use_spacetime_init, use_table, use_table_row};
+pub use hooks::{use_spacetime_init, use_table, use_table_row, ConnectionStatus};
 pub use table::{TableFilter, TableSubscription};
 
 // Re-export commonly used types from spacetimedb-sdk

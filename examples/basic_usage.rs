@@ -41,13 +41,16 @@ fn main() {
 fn App() -> Element {
     // Initialize the SpacetimeDB connection
     // In a real application, these would come from configuration
-    use_spacetime_init("ws://localhost:3000", "my_database");
+    let connection_status = use_spacetime_init("ws://localhost:3000", "my_database");
 
     rsx! {
         div {
             style: "font-family: Arial, sans-serif; padding: 20px;",
             
             h1 { "SpacetimeDB + Dioxus Example" }
+            
+            // Display connection status
+            ConnectionStatusBanner { status: connection_status }
             
             p {
                 "This example demonstrates reactive SpacetimeDB integration with Dioxus. "
@@ -59,6 +62,42 @@ fn App() -> Element {
             
             // Display recent transactions
             TransactionsSection {}
+        }
+    }
+}
+
+/// Component that displays the connection status
+#[component]
+fn ConnectionStatusBanner(status: Signal<ConnectionStatus>) -> Element {
+    rsx! {
+        div {
+            style: match status() {
+                ConnectionStatus::Connecting => "padding: 15px; margin: 20px 0; background-color: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; color: #856404;",
+                ConnectionStatus::Connected(_) => "padding: 15px; margin: 20px 0; background-color: #d4edda; border: 1px solid #28a745; border-radius: 5px; color: #155724;",
+                ConnectionStatus::Failed(_) => "padding: 15px; margin: 20px 0; background-color: #f8d7da; border: 1px solid #dc3545; border-radius: 5px; color: #721c24;",
+            },
+            
+            match status() {
+                ConnectionStatus::Connecting => rsx! {
+                    div {
+                        strong { "🔄 Connecting..." }
+                        p { style: "margin: 5px 0 0 0;", "Attempting to connect to SpacetimeDB..." }
+                    }
+                },
+                ConnectionStatus::Connected(ref identity) => rsx! {
+                    div {
+                        strong { "✅ Connected to SpacetimeDB" }
+                        p { style: "margin: 5px 0 0 0;", "Identity: {identity}" }
+                    }
+                },
+                ConnectionStatus::Failed(ref error) => rsx! {
+                    div {
+                        strong { "❌ Connection Failed" }
+                        p { style: "margin: 5px 0 0 0;", "Error: {error}" }
+                        p { style: "margin: 5px 0 0 0; font-size: 0.9em;", "Please ensure SpacetimeDB is running at ws://localhost:3000" }
+                    }
+                },
+            }
         }
     }
 }

@@ -5,6 +5,17 @@ use crate::table::TableFilter;
 use dioxus::prelude::*;
 use tracing::{debug, error};
 
+/// Connection status enum
+#[derive(Clone, Debug, PartialEq)]
+pub enum ConnectionStatus {
+    /// Not yet attempted to connect
+    Connecting,
+    /// Successfully connected
+    Connected(String), // Contains identity
+    /// Failed to connect
+    Failed(String), // Contains error message
+}
+
 /// Initialize the SpacetimeDB connection and provide it as context
 ///
 /// This hook should be called once at the application root level. It creates
@@ -15,6 +26,10 @@ use tracing::{debug, error};
 /// * `url` - The WebSocket URL of the SpacetimeDB instance (e.g., "ws://localhost:3000")
 /// * `database` - The name of the database to connect to
 ///
+/// # Returns
+///
+/// A signal containing the current connection status
+///
 /// # Example
 ///
 /// ```rust,no_run
@@ -23,7 +38,7 @@ use tracing::{debug, error};
 ///
 /// fn App() -> Element {
 ///     // Initialize connection at the app level
-///     use_spacetime_init("ws://localhost:3000", "my_database");
+///     let status = use_spacetime_init("ws://localhost:3000", "my_database");
 ///     
 ///     rsx! {
 ///         div {
@@ -33,7 +48,9 @@ use tracing::{debug, error};
 /// }
 /// # fn MyComponent() -> Element { rsx! { div {} } }
 /// ```
-pub fn use_spacetime_init(url: &str, database: &str) {
+pub fn use_spacetime_init(url: &str, database: &str) -> Signal<ConnectionStatus> {
+    let mut status = use_signal(|| ConnectionStatus::Connecting);
+    
     let context = use_context_provider(|| {
         debug!("Initializing SpacetimeDB context");
         SpacetimeContext::new(url, database)
@@ -46,13 +63,22 @@ pub fn use_spacetime_init(url: &str, database: &str) {
             match context.initialize().await {
                 Ok(_) => {
                     debug!("SpacetimeDB connection initialized successfully");
+                    if let Some(identity) = context.identity().await {
+                        status.set(ConnectionStatus::Connected(identity));
+                    } else {
+                        status.set(ConnectionStatus::Connected("unknown".to_string()));
+                    }
                 }
                 Err(e) => {
-                    error!("Failed to initialize SpacetimeDB connection: {}", e);
+                    let error_msg = format!("{}", e);
+                    error!("Failed to initialize SpacetimeDB connection: {}", error_msg);
+                    status.set(ConnectionStatus::Failed(error_msg));
                 }
             }
         });
     });
+    
+    status
 }
 
 /// Subscribe to a SpacetimeDB table and get reactive access to its data
